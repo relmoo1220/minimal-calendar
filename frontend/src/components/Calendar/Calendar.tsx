@@ -14,7 +14,8 @@ import {
   startOfYear,
   endOfYear,
   eachMonthOfInterval,
-  eachWeekOfInterval 
+  eachWeekOfInterval,
+  isSameDay 
 } from 'date-fns';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/Button/Button";
@@ -24,7 +25,12 @@ export type CalendarMode = 'Year' | 'Month' | 'Week' | 'Day';
 interface CalendarEvent {
   id: string;
   title: string;
-  date: Date;
+  tag: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
+  startTime: string;
+  endTime: string;
 }
 
 interface CalendarProps {
@@ -45,6 +51,8 @@ const Calendar: React.FC<CalendarProps> = ({
   className = '',
 }) => {
   const [currentDate, setCurrentDate] = useState(selectedDate);
+  const [hoveredEvent, setHoveredEvent] = useState<CalendarEvent | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
 
   // Update currentDate when selectedDate changes
   useEffect(() => {
@@ -121,6 +129,36 @@ const Calendar: React.FC<CalendarProps> = ({
     onViewChange?.(newMode, date);
   };
 
+  const handleEventHover = (event: CalendarEvent, e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredEvent(event);
+    setHoverPosition({
+      top: rect.bottom,
+      left: rect.left
+    });
+  };
+
+  const renderEventPopup = () => {
+    if (!hoveredEvent) return null;
+
+    return (
+      <div 
+        className="fixed bg-foreground text-background p-4 rounded-lg shadow-xl z-50 min-w-[250px]"
+        style={{ 
+          top: `${hoverPosition.top}px`, 
+          left: `${hoverPosition.left}px` 
+        }}
+      >
+        <div className="text-sm space-y-2">
+          <p><span className="font-bold">Tag:</span> {hoveredEvent.tag}</p>
+          <p><span className="font-bold">Description:</span> {hoveredEvent.description}</p>
+          <p><span className="font-bold">Date:</span> {format(hoveredEvent.startDate, 'MMM dd, yyyy')}</p>
+          <p><span className="font-bold">Time:</span> {hoveredEvent.startTime} - {hoveredEvent.endTime}</p>
+        </div>
+      </div>
+    );
+  };
+
   const renderHeader = () => (
     <div className="flex justify-between items-center p-4 border-b border-background">
       <div className="flex items-center gap-2">
@@ -162,7 +200,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <h3 className="font-semibold">{format(month, 'MMMM')}</h3>
             <div className="text-sm opacity-60">
               {events.filter(event => 
-                format(event.date, 'M') === format(month, 'M')
+                format(event.startDate, 'M') === format(month, 'M')
               ).length} events
             </div>
           </div>
@@ -194,12 +232,14 @@ const Calendar: React.FC<CalendarProps> = ({
             >
               <div className="font-semibold">{format(day, 'd')}</div>
               {events
-                .filter(event => format(event.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
+                .filter(event => format(event.startDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
                 .map(event => (
                   <div 
                     key={event.id}
                     className="text-sm p-1 my-1 bg-blue-100 rounded"
                     onClick={() => onEventClick?.(event)}
+                    onMouseEnter={(e) => handleEventHover(event, e)}
+                    onMouseLeave={() => setHoveredEvent(null)}
                   >
                     {event.title}
                   </div>
@@ -231,12 +271,14 @@ const Calendar: React.FC<CalendarProps> = ({
             </div>
             <div className="min-h-[500px] p-2 hover:bg-gray-300">
               {events
-                .filter(event => format(event.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
+                .filter(event => format(event.startDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
                 .map(event => (
                   <div 
                     key={event.id}
                     className="text-sm p-2 my-1 bg-blue-100 rounded-lg"
                     onClick={() => onEventClick?.(event)}
+                    onMouseEnter={(e) => handleEventHover(event, e)}
+                    onMouseLeave={() => setHoveredEvent(null)}
                   >
                     {event.title}
                   </div>
@@ -266,14 +308,16 @@ const Calendar: React.FC<CalendarProps> = ({
             <div key={hour} className="h-20 border-b border-l border-gray-300 p-2">
               {events
                 .filter(event => 
-                  format(event.date, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd') &&
-                  new Date(event.date).getHours() === hour
+                  format(event.startDate, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd') &&
+                  new Date(event.startDate).getHours() === hour
                 )
                 .map(event => (
                   <div 
                     key={event.id}
-                    className="bg-blue-100 p-2 rounded"
+                    className="bg-blue-100 p-2 rounded cursor-pointer"
                     onClick={() => onEventClick?.(event)}
+                    onMouseEnter={(e) => handleEventHover(event, e)}
+                    onMouseLeave={() => setHoveredEvent(null)}
                   >
                     {event.title}
                   </div>
@@ -287,7 +331,7 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   return (
-    <div className={`bg-foreground rounded-lg shadow text-background ${className}`}>
+    <div className={`relative bg-foreground rounded-lg shadow text-background ${className}`}>
       {renderHeader()}
       <AnimatePresence mode="wait">
         <motion.div
@@ -313,6 +357,7 @@ const Calendar: React.FC<CalendarProps> = ({
           })()}
         </motion.div>
       </AnimatePresence>
+      {hoveredEvent && renderEventPopup()}
     </div>
   );
 };

@@ -31,8 +31,8 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
     ref
   ) => {
     const handleSelect = (item: string) => {
-      onOpenChange(false);
       onSelect?.(item);
+      onOpenChange(false);
     };
 
     return (
@@ -41,9 +41,9 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
           {label && (
             <motion.label
               initial={{ y: 0 }}
-              animate={{ 
+              animate={{
                 y: isOpen || value ? -8 : 0,
-                scale: isOpen || value ? 0.9 : 1 
+                scale: isOpen || value ? 0.9 : 1,
               }}
               className="text-sm font-bold text-foreground origin-left"
             >
@@ -51,24 +51,21 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
             </motion.label>
           )}
         </AnimatePresence>
-        
+
         <div className="relative" ref={ref}>
           <motion.div
             animate={{
               scale: isOpen ? 1.02 : 1,
-              borderColor: isOpen ? "var(--foreground)" : "transparent"
+              borderColor: isOpen ? "var(--foreground)" : "transparent",
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
             <button
               onClick={() => onOpenChange(!isOpen)}
-              className="w-full px-4 py-2 bg-foreground text-background border rounded-lg text-start"
+              className="w-full px-4 py-2 bg-foreground text-background border rounded-lg text-start flex justify-between items-center"
             >
-              {value || placeholder}
-              <motion.span
-                animate={{ rotate: isOpen ? 180 : 0 }}
-                className="absolute right-4"
-              >
+              <span>{value || placeholder}</span>
+              <motion.span animate={{ rotate: isOpen ? 180 : 0 }}>
                 ▼
               </motion.span>
             </button>
@@ -76,7 +73,6 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
 
           <AnimatePresence>
             {isOpen && (
-              
               <motion.ul
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -92,9 +88,10 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
                   items.map((item, index) => (
                     <motion.li
                       key={index}
-                      className="px-4 py-2 cursor-pointer text-[#0a0a0a] flex justify-between items-center hover:bg-gray-200"
+                      onClick={() => handleSelect(item)}
+                      className="px-4 py-2 cursor-pointer text-[#0a0a0a] flex justify-between items-center hover:bg-gray-200 rounded-md"
                     >
-                      <span onClick={() => handleSelect(item)}>{item}</span>
+                      <span>{item}</span>
                       {enableRemove && (
                         <button
                           onClick={(e) => {

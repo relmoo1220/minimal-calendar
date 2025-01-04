@@ -57,6 +57,19 @@ const AddEventPage = () => {
     endTime: "",
   });
 
+  const [eventItems, setEventItems] = useState<FormData[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('eventItems');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+
+  // Track changes and update localStorage
+  useEffect(() => {
+    localStorage.setItem('eventItems', JSON.stringify(eventItems));
+  }, [eventItems]);
+
   const handleDateChange = (start: Date | null, end: Date | null) => {
     setFormData((prev) => ({
       ...prev,
@@ -75,7 +88,10 @@ const AddEventPage = () => {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    if (isFormValid()) {
+      setEventItems(prev => [...prev, formData]);
+      router.push('/');
+    }
   };
 
   const isFormValid = () => {
@@ -105,14 +121,7 @@ const AddEventPage = () => {
         <h1 className="text-2xl font-bold mb-6 text-foreground">
           Add New Event
         </h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <InputText
-            label="Title"
-            placeholder="Enter event title"
-            value={formData.title}
-            onChange={handleInputChange("title")}
-          />
-          
+        <form onSubmit={handleSubmit}>
           <Dropdown
             ref={dropdownRef}
             label="Tag"
@@ -128,6 +137,13 @@ const AddEventPage = () => {
             }}
             placeholder="Select a tag"
           />
+          <InputText
+            label="Title"
+            placeholder="Enter event title"
+            value={formData.title}
+            onChange={handleInputChange("title")}
+          />
+          
           <InputText
             label="Description"
             placeholder="Enter event description"
