@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import InputText from "@/components/InputText/InputText";
 import Button from "@/components/Button/Button";
 import DateRange from "@/components/DateRange/DateRange";
 import InputTime from "@/components/InputTime/InputTime";
+import Dropdown from "@/components/Dropdown/Dropdown";
 
 interface FormData {
   title: string;
@@ -19,6 +20,33 @@ interface FormData {
 }
 
 const AddEventPage = () => {
+  const [tagItems, setTagItems] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tagItems');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+  
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsTagDropdownOpen(false);
+      }
+    };
+
+    if (isTagDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isTagDropdownOpen]);
+  
   const [formData, setFormData] = useState<FormData>({
     title: "",
     tag: "",
@@ -84,11 +112,21 @@ const AddEventPage = () => {
             value={formData.title}
             onChange={handleInputChange("title")}
           />
-          <InputText
+          
+          <Dropdown
+            ref={dropdownRef}
             label="Tag"
-            placeholder="Enter event tag"
+            items={tagItems}
             value={formData.tag}
-            onChange={handleInputChange("tag")}
+            isOpen={isTagDropdownOpen}
+            onOpenChange={setIsTagDropdownOpen}
+            onSelect={(value) => {
+              setFormData(prev => ({
+                ...prev,
+                tag: value
+              }));
+            }}
+            placeholder="Select a tag"
           />
           <InputText
             label="Description"
@@ -116,7 +154,7 @@ const AddEventPage = () => {
               onChange={handleInputChange("endTime")}
             />
           </div>
-          <Button 
+          <Button
             onClick={(e) => handleSubmit(e as FormEvent)}
             disabled={!isFormValid()}
             variant="light"

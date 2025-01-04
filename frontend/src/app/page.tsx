@@ -10,11 +10,18 @@ import DropdownInput from "@/components/DropdownInput/DropdownInput";
 export default function Home() {
   const [selectedView, setSelectedView] = useState<CalendarMode>("Year");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [eventItems, setEventItems] = useState([
-    "Meeting",
-    "Interview",
-    "Appointment",
-  ]);
+  const [tagItems, setTagItems] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("tagItems");
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+
+  // Track changes and update localStorage
+  useEffect(() => {
+    localStorage.setItem("tagItems", JSON.stringify(tagItems));
+  }, [tagItems]);
 
   // Normal Dropdown
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
@@ -54,8 +61,16 @@ export default function Home() {
 
   const handleAddTag = (value: string) => {
     if (value.trim()) {
-      setEventItems((prev) => [...prev, value.trim()]);
+      setTagItems((prev) => {
+        const uniqueItems = new Set(prev);
+        uniqueItems.add(value.trim());
+        return Array.from(uniqueItems);
+      });
     }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTagItems((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
 
   const handleViewChange = (newMode: CalendarMode, date: Date) => {
@@ -99,11 +114,13 @@ export default function Home() {
           />
           <Dropdown
             ref={tagDropdownRef}
-            items={eventItems}
+            items={tagItems}
             placeholder="Tags"
             className="w-52"
             isOpen={isTagDropdownOpen}
             onOpenChange={setIsTagDropdownOpen}
+            enableRemove={true}
+            onRemove={handleRemoveTag}
           />
         </div>
         <div className="flex w-full h-full">
