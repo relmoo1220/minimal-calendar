@@ -1,20 +1,21 @@
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useState } from "react";
 
-interface DropdownProps {
+interface DropdownProps<T> {
   label?: string;
-  items: string[];
-  onSelect?: (item: string) => void;
-  onRemove?: (item: string) => void;
+  items: T[];
+  onSelect?: (item: T) => void;
+  onRemove?: (item: T) => void;
   placeholder?: string;
   className?: string;
   value?: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   enableRemove?: boolean;
+  renderItem?: (item: T) => React.ReactNode;
 }
 
-const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
+const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps<any>>(
   (
     {
       label,
@@ -27,6 +28,7 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
       isOpen,
       onOpenChange,
       enableRemove = false,
+      renderItem,
     },
     ref
   ) => {
@@ -91,7 +93,7 @@ const Dropdown = React.forwardRef<HTMLDivElement, DropdownProps>(
                       onClick={() => handleSelect(item)}
                       className="px-4 py-2 cursor-pointer text-[#0a0a0a] flex justify-between items-center hover:bg-gray-200 rounded-md"
                     >
-                      <span>{item}</span>
+                      {renderItem ? renderItem(item) : <span>{item}</span>}
                       {enableRemove && (
                         <button
                           onClick={(e) => {

@@ -19,6 +19,11 @@ interface FormData {
   endTime: string;
 }
 
+interface TagItem {
+  name: string;
+  color: string;
+}
+
 const AddEventPage = () => {
   const [tagItems, setTagItems] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -129,13 +134,22 @@ const AddEventPage = () => {
             value={formData.tag}
             isOpen={isTagDropdownOpen}
             onOpenChange={setIsTagDropdownOpen}
-            onSelect={(value) => {
+            onSelect={(tag: TagItem) => {
               setFormData(prev => ({
                 ...prev,
-                tag: value
+                tag: tag.name
               }));
             }}
             placeholder="Select a tag"
+            renderItem={(tag: TagItem) => (
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-4 h-4 rounded-full" 
+                  style={{ backgroundColor: tag.color }}
+                />
+                <span>{tag.name}</span>
+              </div>
+            )}
           />
           <InputText
             label="Title"

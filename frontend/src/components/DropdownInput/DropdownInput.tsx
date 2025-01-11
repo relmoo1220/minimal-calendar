@@ -4,13 +4,14 @@ import Button from "../Button/Button";
 import InputText from "../InputText/InputText";
 
 interface DropdownInputProps {
-  onAddTag: (tag: string) => void;
+  onAddTag: (tag: string, color: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
 const DropdownInput = ({ onAddTag, isOpen, onClose }: DropdownInputProps) => {
   const [newTag, setNewTag] = useState("");
+  const [color, setColor] = useState("#3b82f6"); // Default blue color
 
   useEffect(() => {
     if (isOpen) {
@@ -20,8 +21,9 @@ const DropdownInput = ({ onAddTag, isOpen, onClose }: DropdownInputProps) => {
 
   const handleSubmit = () => {
     if (newTag.trim()) {
-      onAddTag(newTag);
+      onAddTag(newTag, color);
       setNewTag("");
+      setColor("#3b82f6");
       onClose();
     }
   };
@@ -34,18 +36,27 @@ const DropdownInput = ({ onAddTag, isOpen, onClose }: DropdownInputProps) => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="m-4 flex gap-2 bg-foreground p-4 rounded-lg shadow-lg"
+            className="m-4 flex flex-col gap-2 bg-foreground p-4 rounded-lg shadow-lg"
           >
-            <InputText
-              className="flex-1"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Enter new tag"
-            />
+            <div className="flex gap-2">
+              <InputText
+                className="flex-1"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder="Enter new tag"
+              />
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-12 h-10 rounded cursor-pointer border-none"
+              />
+            </div>
             <Button
               onClick={handleSubmit}
               disabled={!newTag.trim()}
               variant="dark"
+              className="w-full"
             >
               Add
             </Button>

@@ -18,10 +18,21 @@ interface FormData {
   endTime: string;
 }
 
+interface TagItem {
+  name: string;
+  color: string;
+}
+
 export default function Home() {
   const [selectedView, setSelectedView] = useState<CalendarMode>("Year");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [tagItems, setTagItems] = useState<string[]>([]);
+  const [tagItems, setTagItems] = useState<TagItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tagItems');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const [eventItems, setEventItems] = useState<FormData[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
@@ -34,11 +45,6 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    const savedTags = localStorage.getItem("tagItems");
-    if (savedTags) {
-      setTagItems(JSON.parse(savedTags));
-    }
-
     const savedEvents = localStorage.getItem("eventItems");
     if (savedEvents) {
       setEventItems(JSON.parse(savedEvents));
@@ -53,18 +59,20 @@ export default function Home() {
     localStorage.setItem("eventItems", JSON.stringify(eventItems));
   }, [eventItems]);
 
-  const handleAddTag = (value: string) => {
-    if (value.trim()) {
+  const handleAddTag = (name: string, color: string) => {
+    if (name.trim()) {
       setTagItems((prev) => {
-        const uniqueItems = new Set(prev);
-        uniqueItems.add(value.trim());
-        return Array.from(uniqueItems);
+        const exists = prev.some(tag => tag.name === name.trim());
+        if (!exists) {
+          return [...prev, { name: name.trim(), color }];
+        }
+        return prev;
       });
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTagItems((prev) => prev.filter((tag) => tag !== tagToRemove));
+    setTagItems((prev) => prev.filter((tag) => tag.name !== tagToRemove));
   };
 
   const handleViewChange = (newMode: CalendarMode, date: Date) => {
@@ -119,9 +127,18 @@ export default function Home() {
             value={selectedTag || ""}
             isOpen={isTagDropdownOpen}
             onOpenChange={setIsTagDropdownOpen}
-            onSelect={setSelectedTag}
+            onSelect={(tag) => setSelectedTag(tag.name)}
             enableRemove={true}
-            onRemove={handleRemoveTag}
+            onRemove={(tag) => handleRemoveTag(tag.name)}
+            renderItem={(tag: TagItem) => (
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-4 h-4 rounded-full" 
+                  style={{ backgroundColor: tag.color }}
+                />
+                <span>{tag.name}</span>
+              </div>
+            )}
           />
         </div>
         <Calendar
