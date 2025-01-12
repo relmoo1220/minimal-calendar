@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  format, 
-  startOfWeek, 
-  addDays, 
-  startOfMonth, 
-  endOfMonth, 
-  endOfWeek, 
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  format,
+  startOfWeek,
+  addDays,
+  startOfMonth,
+  endOfMonth,
+  endOfWeek,
   addMonths,
   subMonths,
   addYears,
@@ -15,17 +15,20 @@ import {
   endOfYear,
   eachMonthOfInterval,
   eachWeekOfInterval,
-  isSameDay 
-} from 'date-fns';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+  isSameDay,
+} from "date-fns";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/Button/Button";
 
-export type CalendarMode = 'Year' | 'Month' | 'Week' | 'Day';
+export type CalendarMode = "Year" | "Month" | "Week" | "Day";
 
 interface CalendarEvent {
-  id: string;
+  id: number;
   title: string;
-  tag: string;
+  tag: {
+    name: string;
+    color: string;
+  };
   description: string;
   startDate: Date;
   endDate: Date;
@@ -48,46 +51,54 @@ const Calendar: React.FC<CalendarProps> = ({
   events = [],
   onEventClick,
   onViewChange,
-  className = '',
+  className = "",
 }) => {
-  const [currentDate, setCurrentDate] = useState(selectedDate);
+  const [currentDate, setCurrentDate] = useState<Date>(selectedDate);
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvent | null>(null);
-  const [hoverPosition, setHoverPosition] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
+  const [renderedEvents, setRenderedEvents] = useState<CalendarEvent[]>([]);
 
-  // Update currentDate when selectedDate changes
   useEffect(() => {
     setCurrentDate(selectedDate);
-  }, [selectedDate]);
+    setRenderedEvents(events);
+  }, [selectedDate, events]);
+
+  const [hoverPosition, setHoverPosition] = useState<{
+    top: number;
+    left: number;
+  }>({ top: 0, left: 0 });
 
   const getHeaderText = () => {
     switch (mode) {
-      case 'Year':
-        return format(currentDate, 'yyyy');
-      case 'Month':
-        return format(currentDate, 'MMMM yyyy');
-      case 'Week':
+      case "Year":
+        return format(currentDate, "yyyy");
+      case "Month":
+        return format(currentDate, "MMMM yyyy");
+      case "Week":
         const weekStart = startOfWeek(currentDate);
         const weekEnd = endOfWeek(currentDate);
-        return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
-      case 'Day':
-        return format(currentDate, 'EEEE, MMMM d, yyyy');
+        return `${format(weekStart, "MMM d")} - ${format(
+          weekEnd,
+          "MMM d, yyyy"
+        )}`;
+      case "Day":
+        return format(currentDate, "EEEE, MMMM d, yyyy");
       default:
-        return format(currentDate, 'MMMM yyyy');
+        return format(currentDate, "MMMM yyyy");
     }
   };
 
   const handlePrevious = () => {
     switch (mode) {
-      case 'Year':
+      case "Year":
         setCurrentDate(subYears(currentDate, 1));
         break;
-      case 'Month':
+      case "Month":
         setCurrentDate(subMonths(currentDate, 1));
         break;
-      case 'Week':
+      case "Week":
         setCurrentDate(addDays(currentDate, -7));
         break;
-      case 'Day':
+      case "Day":
         setCurrentDate(addDays(currentDate, -1));
         break;
     }
@@ -95,16 +106,16 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const handleNext = () => {
     switch (mode) {
-      case 'Year':
+      case "Year":
         setCurrentDate(addYears(currentDate, 1));
         break;
-      case 'Month':
+      case "Month":
         setCurrentDate(addMonths(currentDate, 1));
         break;
-      case 'Week':
+      case "Week":
         setCurrentDate(addDays(currentDate, 7));
         break;
-      case 'Day':
+      case "Day":
         setCurrentDate(addDays(currentDate, 1));
         break;
     }
@@ -112,14 +123,14 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const handleGoUp = () => {
     switch (mode) {
-      case 'Day':
-        onViewChange?.('Week', currentDate);
+      case "Day":
+        onViewChange?.("Week", currentDate);
         break;
-      case 'Week':
-        onViewChange?.('Month', currentDate);
+      case "Week":
+        onViewChange?.("Month", currentDate);
         break;
-      case 'Month':
-        onViewChange?.('Year', currentDate);
+      case "Month":
+        onViewChange?.("Year", currentDate);
         break;
     }
   };
@@ -129,12 +140,15 @@ const Calendar: React.FC<CalendarProps> = ({
     onViewChange?.(newMode, date);
   };
 
-  const handleEventHover = (event: CalendarEvent, e: React.MouseEvent<HTMLDivElement>) => {
+  const handleEventHover = (
+    event: CalendarEvent,
+    e: React.MouseEvent<HTMLDivElement>
+  ) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setHoveredEvent(event);
     setHoverPosition({
       top: rect.bottom,
-      left: rect.left
+      left: rect.left,
     });
   };
 
@@ -142,18 +156,32 @@ const Calendar: React.FC<CalendarProps> = ({
     if (!hoveredEvent) return null;
 
     return (
-      <div 
+      <div
         className="fixed bg-foreground text-background p-4 rounded-lg shadow-xl z-50 min-w-[250px]"
-        style={{ 
-          top: `${hoverPosition.top}px`, 
-          left: `${hoverPosition.left}px` 
+        style={{
+          top: `${hoverPosition.top}px`,
+          left: `${hoverPosition.left}px`,
         }}
       >
         <div className="text-sm space-y-2">
-          <p><span className="font-bold">Tag:</span> {hoveredEvent.tag}</p>
-          <p><span className="font-bold">Description:</span> {hoveredEvent.description}</p>
-          <p><span className="font-bold">Date:</span> {format(hoveredEvent.startDate, 'MMM dd, yyyy')}</p>
-          <p><span className="font-bold">Time:</span> {hoveredEvent.startTime} - {hoveredEvent.endTime}</p>
+          <p>
+            <span className="font-bold">Id:</span> {hoveredEvent.id}
+          </p>
+          <p>
+            <span className="font-bold">Tag:</span> {hoveredEvent.tag.name}
+          </p>
+          <p>
+            <span className="font-bold">Description:</span>{" "}
+            {hoveredEvent.description}
+          </p>
+          <p>
+            <span className="font-bold">Date:</span>{" "}
+            {format(hoveredEvent.startDate, "MMM dd, yyyy")}
+          </p>
+          <p>
+            <span className="font-bold">Time:</span> {hoveredEvent.startTime} -{" "}
+            {hoveredEvent.endTime}
+          </p>
         </div>
       </div>
     );
@@ -162,22 +190,28 @@ const Calendar: React.FC<CalendarProps> = ({
   const renderHeader = () => (
     <div className="flex justify-between items-center p-4 border-b border-background">
       <div className="flex items-center gap-2">
-        <Button onClick={handlePrevious} className="p-2 hover:bg-gray-300 rounded-full">
+        <Button
+          onClick={handlePrevious}
+          className="p-2 hover:bg-gray-300 rounded-full"
+        >
           <ChevronLeftIcon className="w-5 h-5 text-background" />
         </Button>
         <h2 className="text-xl font-semibold text-background">
           {getHeaderText()}
         </h2>
-        <Button onClick={handleNext} className="p-2 hover:bg-gray-300 rounded-full">
+        <Button
+          onClick={handleNext}
+          className="p-2 hover:bg-gray-300 rounded-full"
+        >
           <ChevronRightIcon className="w-5 h-5 text-background" />
         </Button>
       </div>
-      {mode !== 'Year' && (
+      {mode !== "Year" && (
         <Button
           onClick={handleGoUp}
           className="px-3 py-1 text-sm border border-background rounded-full hover:bg-gray-300 text-background"
         >
-          View {mode === 'Day' ? 'Week' : mode === 'Week' ? 'Month' : 'Year'}
+          View {mode === "Day" ? "Week" : mode === "Week" ? "Month" : "Year"}
         </Button>
       )}
     </div>
@@ -186,22 +220,25 @@ const Calendar: React.FC<CalendarProps> = ({
   const renderYearView = () => {
     const months = eachMonthOfInterval({
       start: startOfYear(currentDate),
-      end: endOfYear(currentDate)
+      end: endOfYear(currentDate),
     });
 
     return (
       <div className="grid grid-cols-4 gap-4 p-4">
-        {months.map(month => (
-          <div 
+        {months.map((month) => (
+          <div
             key={month.toString()}
             className="p-4 border border-gray-300 rounded-lg hover:bg-gray-300 cursor-pointer text-background"
-            onClick={() => onViewChange?.('Month', month)}
+            onClick={() => onViewChange?.("Month", month)}
           >
-            <h3 className="font-semibold">{format(month, 'MMMM')}</h3>
+            <h3 className="font-semibold">{format(month, "MMMM")}</h3>
             <div className="text-sm opacity-60">
-              {events.filter(event => 
-                format(event.startDate, 'M') === format(month, 'M')
-              ).length} events
+              {
+                events.filter(
+                  (event) => format(event.startDate, "M") === format(month, "M")
+                ).length
+              }{" "}
+              events
             </div>
           </div>
         ))}
@@ -212,78 +249,93 @@ const Calendar: React.FC<CalendarProps> = ({
   const renderMonthView = () => {
     const weeks = eachWeekOfInterval({
       start: startOfMonth(currentDate),
-      end: endOfMonth(currentDate)
+      end: endOfMonth(currentDate),
     });
 
     return (
       <div className="grid grid-cols-7 gap-1 p-4">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center font-semibold p-2 text-background">{day}</div>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <div
+            key={day}
+            className="text-center font-semibold p-2 text-background"
+          >
+            {day}
+          </div>
         ))}
-        {weeks.map(week => (
-          Array.from({ length: 7 }, (_, i) => addDays(week, i)).map(day => (
-            <div 
+        {weeks.map((week) =>
+          Array.from({ length: 7 }, (_, i) => addDays(week, i)).map((day) => (
+            <div
               key={day.toString()}
-              onClick={() => handleDateClick(day, 'Week')}
+              onClick={() => handleDateClick(day, "Week")}
               className={`p-2 border border-gray-300 rounded-lg cursor-pointer
-                ${format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') 
-                  ? 'bg-gray-300' 
-                  : 'hover:bg-gray-300'}`}
+                ${
+                  format(day, "yyyy-MM-dd") ===
+                  format(selectedDate, "yyyy-MM-dd")
+                    ? "bg-gray-300"
+                    : "hover:bg-gray-300"
+                }`}
             >
-              <div className="font-semibold">{format(day, 'd')}</div>
+              <div className="font-semibold">{format(day, "d")}</div>
               {events
-                .filter(event => format(event.startDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-                .map(event => (
-                  <div 
+                .filter(
+                  (event) =>
+                    format(event.startDate, "yyyy-MM-dd") ===
+                    format(day, "yyyy-MM-dd")
+                )
+                .map((event) => (
+                  <div
                     key={event.id}
-                    className="text-sm p-1 my-1 bg-blue-100 rounded"
+                    className="text-sm p-1 my-1 rounded"
+                    style={{ backgroundColor: event.tag.color }}
                     onClick={() => onEventClick?.(event)}
                     onMouseEnter={(e) => handleEventHover(event, e)}
                     onMouseLeave={() => setHoveredEvent(null)}
                   >
                     {event.title}
                   </div>
-                ))
-              }
+                ))}
             </div>
           ))
-        ))}
+        )}
       </div>
     );
   };
 
   const renderWeekView = () => {
-    const days = Array.from(
-      { length: 7 }, 
-      (_, i) => addDays(startOfWeek(currentDate), i)
+    const days = Array.from({ length: 7 }, (_, i) =>
+      addDays(startOfWeek(currentDate), i)
     );
 
     return (
       <div className="grid grid-cols-7 gap-1 p-4">
-        {days.map(day => (
-          <div 
-            key={day.toString()} 
+        {days.map((day) => (
+          <div
+            key={day.toString()}
             className="border border-gray-300 rounded-lg cursor-pointer"
-            onClick={() => onViewChange?.('Day', day)}
+            onClick={() => onViewChange?.("Day", day)}
           >
             <div className="text-center font-semibold p-2 border-b border-gray-300">
-              {format(day, 'EEE d')}
+              {format(day, "EEE d")}
             </div>
             <div className="min-h-[500px] p-2 hover:bg-gray-300">
               {events
-                .filter(event => format(event.startDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-                .map(event => (
-                  <div 
+                .filter(
+                  (event) =>
+                    format(event.startDate, "yyyy-MM-dd") ===
+                    format(day, "yyyy-MM-dd")
+                )
+                .map((event) => (
+                  <div
                     key={event.id}
-                    className="text-sm p-2 my-1 bg-blue-100 rounded-lg"
+                    className="text-sm p-1 my-1 rounded"
+                    style={{ backgroundColor: event.tag.color }}
                     onClick={() => onEventClick?.(event)}
                     onMouseEnter={(e) => handleEventHover(event, e)}
                     onMouseLeave={() => setHoveredEvent(null)}
                   >
                     {event.title}
                   </div>
-                ))
-              }
+                ))}
             </div>
           </div>
         ))}
@@ -291,47 +343,85 @@ const Calendar: React.FC<CalendarProps> = ({
     );
   };
 
-  const renderDayView = () => {
-    const hours = Array.from({ length: 24 }, (_, i) => i);
+  const HOUR_HEIGHT = 60; // pixels per hour
+  const DAY_HEIGHT = HOUR_HEIGHT * 24;
 
+  const calculateExactPosition = (time: string): number => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const totalMinutes = hours * 60 + minutes;
+    return (totalMinutes / 1440) * DAY_HEIGHT; // Convert to pixels
+  };
+
+  const renderDayView = () => {
+    const hourSlots = Array.from({ length: 24 }, (_, i) => i);
+    
     return (
-      <div className="grid grid-cols-[100px_1fr] h-[600px] overflow-y-auto">
-        <div className="grid grid-rows-24 gap-0">
-          {hours.map(hour => (
-            <div key={hour} className="h-20 border-b border-gray-300 p-2 text-sm text-gray-500">
-              {format(new Date().setHours(hour), 'ha')}
+      <div className="relative" style={{ height: `${DAY_HEIGHT}px` }}>
+        {/* Fixed Grid Background */}
+        <div className="absolute inset-0">
+          <div className="grid grid-cols-[60px_1fr] h-full">
+            {/* Time labels */}
+            <div className="relative">
+              {hourSlots.map((hour) => (
+                <div
+                  key={hour}
+                  className="absolute text-sm text-background"
+                  style={{ top: `${hour * HOUR_HEIGHT}px` }}
+                >
+                  {hour.toString().padStart(2, "0")}:00
+                </div>
+              ))}
             </div>
-          ))}
+
+            {/* Fixed width grid lines */}
+            <div className="relative border-l w-full border-gray-300">
+              {hourSlots.map((hour) => (
+                <div
+                  key={hour}
+                  className="absolute w-full border-t border-gray-300"
+                  style={{ top: `${hour * HOUR_HEIGHT}px` }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="grid grid-rows-24 gap-0">
-          {hours.map(hour => (
-            <div key={hour} className="h-20 border-b border-l border-gray-300 p-2">
-              {events
-                .filter(event => 
-                  format(event.startDate, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd') &&
-                  new Date(event.startDate).getHours() === hour
-                )
-                .map(event => (
-                  <div 
-                    key={event.id}
-                    className="bg-blue-100 p-2 rounded cursor-pointer"
-                    onClick={() => onEventClick?.(event)}
-                    onMouseEnter={(e) => handleEventHover(event, e)}
-                    onMouseLeave={() => setHoveredEvent(null)}
-                  >
-                    {event.title}
-                  </div>
-                ))
-              }
-            </div>
-          ))}
+
+        {/* Events Layer */}
+        <div className="absolute inset-0 ml-[60px]">
+          {events
+            .filter((event) => isSameDay(event.startDate, currentDate))
+            .map((event) => {
+              const topPosition = calculateExactPosition(event.startTime);
+              const bottomPosition = calculateExactPosition(event.endTime);
+              const height = bottomPosition - topPosition;
+
+              return (
+                <div
+                  key={event.id}
+                  className="absolute left-1 right-1 rounded-md px-2 py-1 text-sm overflow-hidden"
+                  style={{
+                    top: `${topPosition}px`,
+                    height: `${height}px`,
+                    backgroundColor: event.tag.color,
+                    minHeight: "20px"
+                  }}
+                  onClick={() => onEventClick?.(event)}
+                  onMouseEnter={(e) => handleEventHover(event, e)}
+                  onMouseLeave={() => setHoveredEvent(null)}
+                >
+                  {event.title}
+                </div>
+              );
+            })}
         </div>
       </div>
     );
   };
 
   return (
-    <div className={`relative bg-foreground rounded-lg shadow text-background ${className}`}>
+    <div
+      className={`relative bg-foreground rounded-lg shadow text-background ${className}`}
+    >
       {renderHeader()}
       <AnimatePresence mode="wait">
         <motion.div
@@ -343,13 +433,13 @@ const Calendar: React.FC<CalendarProps> = ({
         >
           {(() => {
             switch (mode) {
-              case 'Year':
+              case "Year":
                 return renderYearView();
-              case 'Month':
+              case "Month":
                 return renderMonthView();
-              case 'Week':
+              case "Week":
                 return renderWeekView();
-              case 'Day':
+              case "Day":
                 return renderDayView();
               default:
                 return renderMonthView();

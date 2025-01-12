@@ -11,7 +11,10 @@ import Dropdown from "@/components/Dropdown/Dropdown";
 
 interface FormData {
   title: string;
-  tag: string;
+  tag: {
+    name: string;
+    color: string;
+  };
   description: string;
   startDate: Date | null;
   endDate: Date | null;
@@ -25,7 +28,7 @@ interface TagItem {
 }
 
 const AddEventPage = () => {
-  const [tagItems, setTagItems] = useState<string[]>(() => {
+  const [tagItems, setTagItems] = useState<TagItem[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('tagItems');
       return saved ? JSON.parse(saved) : [];
@@ -54,7 +57,7 @@ const AddEventPage = () => {
   
   const [formData, setFormData] = useState<FormData>({
     title: "",
-    tag: "",
+    tag: { name: "", color: "" },
     description: "",
     startDate: null,
     endDate: null,
@@ -94,15 +97,18 @@ const AddEventPage = () => {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (isFormValid()) {
-      setEventItems(prev => [...prev, formData]);
-      router.push('/');
+      const savedEvents = localStorage.getItem('eventItems');
+      const events = savedEvents ? JSON.parse(savedEvents) : [];
+      const updatedEvents = [...events, formData];
+      localStorage.setItem('eventItems', JSON.stringify(updatedEvents));
+      //router.push('/');
     }
   };
 
   const isFormValid = () => {
     return (
       formData.title.trim() !== "" &&
-      formData.tag.trim() !== "" &&
+      formData.tag.name.trim() !== "" &&
       formData.description.trim() !== "" &&
       formData.startDate !== null &&
       formData.endDate !== null &&
@@ -131,13 +137,13 @@ const AddEventPage = () => {
             ref={dropdownRef}
             label="Tag"
             items={tagItems}
-            value={formData.tag}
+            value={formData.tag.name}
             isOpen={isTagDropdownOpen}
             onOpenChange={setIsTagDropdownOpen}
             onSelect={(tag: TagItem) => {
               setFormData(prev => ({
                 ...prev,
-                tag: tag.name
+                tag: { name: tag.name, color: tag.color }
               }));
             }}
             placeholder="Select a tag"

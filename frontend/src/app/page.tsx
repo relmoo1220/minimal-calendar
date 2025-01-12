@@ -8,9 +8,12 @@ import Dropdown from "@/components/Dropdown/Dropdown";
 import DropdownInput from "@/components/DropdownInput/DropdownInput";
 
 interface FormData {
-  id: string;
+  id: number;
   title: string;
-  tag: string;
+  tag: {
+    name: string;
+    color: string;
+  };
   description: string;
   startDate: Date | null;
   endDate: Date | null;
@@ -25,14 +28,8 @@ interface TagItem {
 
 export default function Home() {
   const [selectedView, setSelectedView] = useState<CalendarMode>("Year");
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [tagItems, setTagItems] = useState<TagItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('tagItems');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [tagItems, setTagItems] = useState<TagItem[]>([]);
   const [eventItems, setEventItems] = useState<FormData[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
@@ -44,25 +41,36 @@ export default function Home() {
   const tagInputDropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // Load data after mount
   useEffect(() => {
+    const savedTags = localStorage.getItem("tagItems");
+    if (savedTags) {
+      setTagItems(JSON.parse(savedTags));
+    }
+
     const savedEvents = localStorage.getItem("eventItems");
     if (savedEvents) {
       setEventItems(JSON.parse(savedEvents));
     }
   }, []);
 
+  // Save changes
   useEffect(() => {
-    localStorage.setItem("tagItems", JSON.stringify(tagItems));
+    if (tagItems.length > 0) {
+      localStorage.setItem("tagItems", JSON.stringify(tagItems));
+    }
   }, [tagItems]);
 
   useEffect(() => {
-    localStorage.setItem("eventItems", JSON.stringify(eventItems));
+    if (eventItems.length > 0) {
+      localStorage.setItem("eventItems", JSON.stringify(eventItems));
+    }
   }, [eventItems]);
 
   const handleAddTag = (name: string, color: string) => {
     if (name.trim()) {
       setTagItems((prev) => {
-        const exists = prev.some(tag => tag.name === name.trim());
+        const exists = prev.some((tag) => tag.name === name.trim());
         if (!exists) {
           return [...prev, { name: name.trim(), color }];
         }
@@ -83,10 +91,14 @@ export default function Home() {
   const calendarView: CalendarMode[] = ["Year", "Month", "Week", "Day"];
 
   const formattedEvents = eventItems.map((event, index) => ({
-    ...event,
-    id: index.toString(),
+    id: index,
+    title: event.title,
+    tag: event.tag, // Already in correct format {name, color}
+    description: event.description,
     startDate: new Date(event.startDate!),
-    endDate: new Date(event.endDate!)
+    endDate: new Date(event.endDate!),
+    startTime: event.startTime,
+    endTime: event.endTime,
   }));
 
   return (
@@ -132,8 +144,8 @@ export default function Home() {
             onRemove={(tag) => handleRemoveTag(tag.name)}
             renderItem={(tag: TagItem) => (
               <div className="flex items-center gap-2">
-                <div 
-                  className="w-4 h-4 rounded-full" 
+                <div
+                  className="w-4 h-4 rounded-full"
                   style={{ backgroundColor: tag.color }}
                 />
                 <span>{tag.name}</span>
@@ -142,6 +154,7 @@ export default function Home() {
           />
         </div>
         <Calendar
+          key={selectedView} // Add key to force re-render on view change
           mode={selectedView}
           selectedDate={selectedDate}
           events={formattedEvents}
