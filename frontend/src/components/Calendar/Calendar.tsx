@@ -16,6 +16,7 @@ import {
   eachMonthOfInterval,
   eachWeekOfInterval,
   isSameDay,
+  startOfDay,
 } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/Button/Button";
@@ -220,30 +221,45 @@ const Calendar: React.FC<CalendarProps> = ({
   const renderYearView = () => {
     const months = eachMonthOfInterval({
       start: startOfYear(currentDate),
-      end: endOfYear(currentDate),
+      end: endOfYear(currentDate)
     });
 
     return (
       <div className="grid grid-cols-4 gap-4 p-4">
-        {months.map((month) => (
-          <div
-            key={month.toString()}
-            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-300 cursor-pointer text-background"
-            onClick={() => onViewChange?.("Month", month)}
-          >
-            <h3 className="font-semibold">{format(month, "MMMM")}</h3>
-            <div className="text-sm opacity-60">
-              {
-                events.filter(
-                  (event) => format(event.startDate, "M") === format(month, "M")
-                ).length
-              }{" "}
-              events
+        {months.map((month) => {
+          const monthEvents = events.filter(
+            (event) => 
+              format(event.startDate, "yyyy") === format(month, "yyyy") && 
+              format(event.startDate, "M") === format(month, "M")
+          );
+
+          return (
+            <div
+              key={month.toString()}
+              className="p-4 border border-gray-300 rounded-lg hover:bg-gray-300 cursor-pointer text-background"
+              onClick={() => onViewChange?.("Month", month)}
+            >
+              <h3 className="font-semibold">{format(month, "MMMM")}</h3>
+              <div className="text-sm opacity-60">
+                {monthEvents.length} events
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
+  };
+
+  const getDatesInRange = (startDate: Date, endDate: Date) => {
+    const dates = [];
+    let currentDate = startOfDay(startDate);
+    const lastDate = startOfDay(endDate);
+    
+    while (currentDate <= lastDate) {
+      dates.push(currentDate);
+      currentDate = addDays(currentDate, 1);
+    }
+    return dates;
   };
 
   const renderMonthView = () => {
@@ -255,90 +271,91 @@ const Calendar: React.FC<CalendarProps> = ({
     return (
       <div className="grid grid-cols-7 gap-1 p-4">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div
-            key={day}
-            className="text-center font-semibold p-2 text-background"
-          >
+          <div key={day} className="text-center font-semibold p-2 text-background">
             {day}
           </div>
         ))}
         {weeks.map((week) =>
-          Array.from({ length: 7 }, (_, i) => addDays(week, i)).map((day) => (
-            <div
-              key={day.toString()}
-              onClick={() => handleDateClick(day, "Week")}
-              className={`p-2 border border-gray-300 rounded-lg cursor-pointer
-                ${
-                  format(day, "yyyy-MM-dd") ===
-                  format(selectedDate, "yyyy-MM-dd")
+          Array.from({ length: 7 }, (_, i) => addDays(week, i)).map((day) => {
+            const dayEvents = events
+              .filter(event => {
+                if (!event.startDate || !event.endDate) return false;
+                const datesInRange = getDatesInRange(event.startDate, event.endDate);
+                return datesInRange.some(date => isSameDay(date, day));
+              })
+              .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+            return (
+              <div
+                key={day.toString()}
+                onClick={() => handleDateClick(day, "Week")}
+                className={`p-2 border border-gray-300 rounded-lg cursor-pointer
+                  ${format(day, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
                     ? "bg-gray-300"
                     : "hover:bg-gray-300"
-                }`}
-            >
-              <div className="font-semibold">{format(day, "d")}</div>
-              {events
-                .filter(
-                  (event) =>
-                    format(event.startDate, "yyyy-MM-dd") ===
-                    format(day, "yyyy-MM-dd")
-                )
-                .map((event) => (
+                  }`}
+              >
+                <div className="font-semibold">{format(day, "d")}</div>
+                {dayEvents.map((event) => (
                   <div
                     key={event.id}
                     className="text-sm p-1 my-1 rounded"
                     style={{ backgroundColor: event.tag.color }}
-                    onClick={() => onEventClick?.(event)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick?.(event);
+                    }}
                     onMouseEnter={(e) => handleEventHover(event, e)}
                     onMouseLeave={() => setHoveredEvent(null)}
                   >
                     {event.title}
                   </div>
                 ))}
-            </div>
-          ))
+              </div>
+            );
+          })
         )}
       </div>
     );
   };
 
   const renderWeekView = () => {
-    const days = Array.from({ length: 7 }, (_, i) =>
+    const days = Array.from({ length: 7 }, (_, i) => 
       addDays(startOfWeek(currentDate), i)
     );
 
     return (
       <div className="grid grid-cols-7 gap-1 p-4">
-        {days.map((day) => (
-          <div
-            key={day.toString()}
-            className="border border-gray-300 rounded-lg cursor-pointer"
-            onClick={() => onViewChange?.("Day", day)}
-          >
-            <div className="text-center font-semibold p-2 border-b border-gray-300">
-              {format(day, "EEE d")}
+        {days.map((day) => {
+          const dayEvents = events
+            .filter(event => isSameDay(event.startDate, day))
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+          return (
+            <div 
+              key={day.toString()} 
+              className="relative min-h-[100px] cursor-pointer hover:bg-gray-300 rounded-lg p-2"
+              onClick={() => onViewChange?.("Day", day)}
+            >
+              <div className="font-semibold">{format(day, "d")}</div>
+              {dayEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="text-sm p-1 my-1 rounded"
+                  style={{ backgroundColor: event.tag.color }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEventClick?.(event);
+                  }}
+                  onMouseEnter={(e) => handleEventHover(event, e)}
+                  onMouseLeave={() => setHoveredEvent(null)}
+                >
+                  {event.title}
+                </div>
+              ))}
             </div>
-            <div className="min-h-[500px] p-2 hover:bg-gray-300">
-              {events
-                .filter(
-                  (event) =>
-                    format(event.startDate, "yyyy-MM-dd") ===
-                    format(day, "yyyy-MM-dd")
-                )
-                .map((event) => (
-                  <div
-                    key={event.id}
-                    className="text-sm p-1 my-1 rounded"
-                    style={{ backgroundColor: event.tag.color }}
-                    onClick={() => onEventClick?.(event)}
-                    onMouseEnter={(e) => handleEventHover(event, e)}
-                    onMouseLeave={() => setHoveredEvent(null)}
-                  >
-                    {event.title}
-                  </div>
-                ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };

@@ -64,6 +64,32 @@ const AddEventPage = () => {
     startTime: "",
     endTime: "",
   });
+  
+  const [timeError, setTimeError] = useState("");
+
+  const validateTimeRange = (start: string, end: string): boolean => {
+    if (!start || !end) return false;
+    const [startHour, startMinute] = start.split(":").map(Number);
+    const [endHour, endMinute] = end.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    return endMinutes > startMinutes;
+  };
+
+  const handleTimeChange = (type: "startTime" | "endTime") => (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [type]: value
+    }));
+
+    if (type === "endTime" && formData.startTime) {
+      if (!validateTimeRange(formData.startTime, value)) {
+        setTimeError("End time must be after start time");
+      } else {
+        setTimeError("");
+      }
+    }
+  };
 
   const [eventItems, setEventItems] = useState<FormData[]>(() => {
     if (typeof window !== 'undefined') {
@@ -101,7 +127,7 @@ const AddEventPage = () => {
       const events = savedEvents ? JSON.parse(savedEvents) : [];
       const updatedEvents = [...events, formData];
       localStorage.setItem('eventItems', JSON.stringify(updatedEvents));
-      //router.push('/');
+      router.push('/');
     }
   };
 
@@ -132,7 +158,7 @@ const AddEventPage = () => {
         <h1 className="text-2xl font-bold mb-6 text-foreground">
           Add New Event
         </h1>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Dropdown
             ref={dropdownRef}
             label="Tag"
@@ -182,12 +208,13 @@ const AddEventPage = () => {
             <InputTime
               label="Start Time"
               value={formData.startTime}
-              onChange={handleInputChange("startTime")}
+              onChange={handleTimeChange("startTime")}
             />
             <InputTime
               label="End Time"
               value={formData.endTime}
-              onChange={handleInputChange("endTime")}
+              onChange={handleTimeChange("endTime")}
+              error={timeError}
             />
           </div>
           <Button
